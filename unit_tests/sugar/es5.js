@@ -28,6 +28,7 @@ test('ECMAScript', function () {
     arr.push(3)
     equals(el, expected[count], 'Array#forEach | elements should be as expected');
     equals(this, 'wasabi', 'Array#forEach | scope can be passed');
+    equals(typeof i, 'number', 'Array#forEach | i must be a number');
     count++;
   }, 'wasabi');
 
@@ -35,16 +36,25 @@ test('ECMAScript', function () {
 
   arr = ['a'];
   arr[-3] = 'b';
-  // Locks the browser! What to do here??
-  //arr[4294967294] = 'c';
-  //arr[4294967295] = 'd';
+
+
+  // This will lock browsers, including native implementations. Sparse array
+  // optimizations are NOT in the ECMA spec, it would seem.
+  // arr[4294967294] = 'c';
+
+
+  // This will reset the array in < IE8. Modern browsers will ignore the element.
+  // arr[4294967295] = 'd';
+
+
+  arr[256] = 'd';
   count = 0;
-  arr.forEach(function(){
+  arr.forEach(function(el, i){
     count++;
   });
 
-  //equals(count, 2, 'Array#forEach | will only visit elements with valid indexes');
-  //equals(arr.length, 4294967295, 'Array#forEach | "numerically greater than the name of every property whose name is an array index"');
+  equals(count, 2, 'Array#forEach | will only visit elements with valid indexes');
+  equals(arr.length, 257, 'Array#forEach | "numerically greater than the name of every property whose name is an array index"');
 
   arr.length = 50;
   arr.forEach(function(){
@@ -66,6 +76,17 @@ test('ECMAScript', function () {
 
   equals(count, 2, 'Array#forEach | elements deleted after the loop begins should not be visited');
 
+  arr = [];
+  expected = ['moo'];
+  count = 0;
+  arr[2] = 'two';
+  arr['2'] = 'moo';
+  arr.forEach(function(el, i){
+    equals(el, expected[count], 'Array#forEach | strings and numbers are both the same for accessing array elements');
+    count++;
+  });
+
+  equals(count, 1, 'Array#forEach | setting array elements with a string is the same as with a number');
 
   // #indexOf
 
@@ -95,9 +116,10 @@ test('ECMAScript', function () {
   equals(arr.indexOf(1, 1.7), -1, 'Array#indexOf | index 1.7 becomes 1');
   equals(arr.indexOf(3, -1.7), 2, 'Array#indexOf | index -1.7 becomes -1');
 
+  // Although Infinity appears to be allowable in the ECMA spec, both of these cases
+  // would appear to kill all modern browsers.
   // equals(arr.indexOf(1, Infinity), -1, 'Array#indexOf | infinity is valid');  This locks the browser... should it??
   // equals(arr.indexOf(1, -Infinity), 0, 'Array#indexOf | -infinity is valid');
-
 
 
 });
